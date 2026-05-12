@@ -1,79 +1,42 @@
 import streamlit as st
 import numpy as np
-import tensorflow as tf
-from PIL import Image
 import cv2
+from tensorflow.keras.models import load_model
+from PIL import Image
 
-# -----------------------------
-# Page config
-# -----------------------------
-st.set_page_config(page_title="Traffic Sign AI", page_icon="🚦")
-
-# -----------------------------
 # Load model
-# -----------------------------
-@st.cache_resource
-def load_model():
-    return tf.keras.models.load_model("model.h5")
+model = load_model("model.h5")
 
-model = load_model()
-
-# -----------------------------
-# Class labels (EDIT if needed)
-# -----------------------------
-class_names = [
-    "Speed Limit 20",
-    "Speed Limit 30",
-    "Speed Limit 50",
-    "Speed Limit 60",
-    "Speed Limit 70",
-    "Speed Limit 80",
-    "End of Speed Limit",
-    "Stop",
-    "No Entry"
+# Class labels (EDIT if your dataset differs)
+classes = [
+    "Speed Limit 20", "Speed Limit 30", "Speed Limit 50",
+    "Speed Limit 60", "Speed Limit 70", "Speed Limit 80",
+    "End Speed Limit", "No Entry", "Stop"
 ]
 
-# -----------------------------
-# Preprocessing
-# -----------------------------
-def preprocess_image(image):
-    image = np.array(image)
-
-    # Convert RGB → OpenCV format if needed
-    if len(image.shape) == 3 and image.shape[2] == 4:
-        image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
-
-    image = cv2.resize(image, (32, 32))   # ⚠️ MUST match training size
-    image = image / 255.0
-    image = np.expand_dims(image, axis=0)
-
-    return image
-
-# -----------------------------
-# UI
-# -----------------------------
 st.title("🚦 Traffic Sign Recognition AI")
-st.write("Upload a traffic sign image and get prediction from the trained model.")
+st.write("Upload a traffic sign image to predict")
 
-uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
+# Upload image
+uploaded_file = st.file_uploader("Choose an image", type=["jpg", "png", "jpeg"])
+
+def preprocess(img):
+    img = np.array(img)
+    img = cv2.resize(img, (64, 64))   # IMPORTANT: match your model input size
+    img = img / 255.0
+    img = np.expand_dims(img, axis=0)
+    return img
 
 if uploaded_file is not None:
-
-    # Show image
     image = Image.open(uploaded_file)
     st.image(image, caption="Uploaded Image", use_container_width=True)
 
-    # Preprocess
-    processed = preprocess_image(image)
+    processed = preprocess(image)
 
-    # Predict
     prediction = model.predict(processed)
-
     class_index = np.argmax(prediction)
-    confidence = np.max(prediction)
 
-    # Output
-    st.subheader("Prediction Result")
+    confidence = np.max(prediction) * 100
 
-    st.success(f"🚦 Class: {class_names[class_index]}")
-    st.info(f"🎯 Confidence: {confidence * 100:.2f}%")
+    st.success(f"Prediction: {classes[class_index]}")
+    st.info(f"Confidence: {confidence:.2f}%")
