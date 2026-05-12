@@ -1,6 +1,6 @@
 streamlit==1.57.0
-tensorflow==2.15.1
+tensorflow==2.16.1
 numpy
-pandas
+opencv-python
 pillow
-opencv-python-headless
+rich
